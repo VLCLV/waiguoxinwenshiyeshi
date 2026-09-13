@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="新闻史复习">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1F3864">
+  <meta name="format-detection" content="telephone=no">
+  <title>今日任务 - 外国新闻事业史复习助手</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="today">
+<div id="navbar-placeholder"></div>
+
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">📋 今日任务</h1>
+    <p class="page-subtitle">每天1小时，按计划稳步推进</p>
+  </div>
+
+  <!-- 天数选择 -->
+  <div class="card">
+    <div class="card-title">📅 选择复习天数</div>
+    <div class="flex gap-8 flex-wrap">
+      <button class="btn btn-outline btn-sm" onclick="goDay(-1)">← 上一天</button>
+      <select class="form-select" id="day-select" style="width: auto; min-width: 160px;" onchange="switchDay(this.value)"></select>
+      <button class="btn btn-outline btn-sm" onclick="goDay(1)">下一天 →</button>
+      <button class="btn btn-primary btn-sm" onclick="goToday()">回到今天</button>
+    </div>
+  </div>
+
+  <!-- 任务详情 -->
+  <div class="card" id="task-detail">
+    <div class="flex-between mb-16">
+      <div>
+        <h2 style="color: var(--primary-dark); margin-bottom: 4px;" id="task-title">Day --</h2>
+        <div>
+          <span class="badge" id="task-phase"></span>
+          <span class="badge badge-info" id="task-date"></span>
+        </div>
+      </div>
+      <div id="task-status-badge"></div>
+    </div>
+
+    <!-- 背诵任务 -->
+    <div style="margin-bottom: 20px;">
+      <div class="card-title" style="border-bottom: none; margin-bottom: 8px;">📖 背诵任务（约45分钟）</div>
+      <div style="padding: 16px; background: #F0F4F8; border-radius: 8px; border-left: 4px solid var(--primary);" id="task-recite"></div>
+    </div>
+
+    <!-- 刷题任务 -->
+    <div style="margin-bottom: 20px;">
+      <div class="card-title" style="border-bottom: none; margin-bottom: 8px;">✍️ 刷题/练习任务（约15分钟）</div>
+      <div style="padding: 16px; background: #F0F7EE; border-radius: 8px; border-left: 4px solid var(--success);" id="task-practice"></div>
+    </div>
+
+    <!-- 完成打卡 -->
+    <div style="padding: 16px; background: #FFF8E1; border-radius: 8px; border-left: 4px solid var(--warning);">
+      <div class="flex-between">
+        <div>
+          <strong>✅ 完成打卡</strong>
+          <p style="color: var(--text-light); font-size: 13px; margin: 4px 0 0;">完成今日任务后点击打卡，系统会记录你的进度</p>
+        </div>
+        <button class="btn btn-success btn-lg" id="complete-btn" onclick="toggleComplete()">
+          标记为已完成
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 学习记录 -->
+  <div class="card">
+    <div class="card-title">📝 今日学习记录</div>
+    <div class="form-group">
+      <label class="form-label">学习笔记/心得（可选）</label>
+      <textarea class="form-textarea" id="study-note" placeholder="记录今天学到的重点、难点或心得..."></textarea>
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-primary" onclick="saveNote()">保存笔记</button>
+      <button class="btn btn-outline" onclick="clearNote()">清空</button>
+    </div>
+  </div>
+
+  <!-- 快捷跳转 -->
+  <div class="card">
+    <div class="card-title">🔗 相关功能快捷入口</div>
+    <div class="btn-group">
+      <a href="materials.html" class="btn btn-primary">📖 去背诵资料</a>
+      <a href="quiz.html" class="btn btn-success">✍️ 去题库练习</a>
+      <a href="keypoints.html" class="btn btn-warning">⭐ 核心考点速记</a>
+      <a href="mistakes.html" class="btn btn-danger">❌ 查看错题本</a>
+    </div>
+  </div>
+
+  <!-- 进度概览 -->
+  <div class="card">
+    <div class="card-title">📊 复习进度概览</div>
+    <div class="stats-grid" style="margin-bottom: 0;">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-completed">0</div>
+        <div class="stat-label">已完成天数</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-number" id="stat-remaining">42</div>
+        <div class="stat-label">剩余天数</div>
+      </div>
+      <div class="stat-card accent">
+        <div class="stat-number" id="stat-rate">0%</div>
+        <div class="stat-label">完成率</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-number" id="stat-days-left">--</div>
+        <div class="stat-label">距考试天数</div>
+      </div>
+    </div>
+    <div class="mt-16">
+      <div class="progress-bar"><div class="progress-fill" id="overall-progress" style="width: 0%"></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="footer-placeholder"></div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+let currentDay = Utils.getCurrentDay();
+
+function initDaySelect() {
+  const select = document.getElementById('day-select');
+  for (let i = 1; i <= 42; i++) {
+    const plan = APP_DATA.plan[i-1];
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `Day ${i} (${plan.date} ${plan.weekday}) - ${plan.phase}`;
+    select.appendChild(opt);
+  }
+  select.value = currentDay;
+}
+
+function switchDay(day) {
+  currentDay = parseInt(day);
+  renderTask();
+}
+
+function goDay(offset) {
+  const newDay = currentDay + offset;
+  if (newDay >= 1 && newDay <= 42) {
+    currentDay = newDay;
+    document.getElementById('day-select').value = currentDay;
+    renderTask();
+  }
+}
+
+function goToday() {
+  currentDay = Utils.getCurrentDay();
+  document.getElementById('day-select').value = currentDay;
+  renderTask();
+}
+
+function renderTask() {
+  const plan = APP_DATA.plan[currentDay - 1];
+  if (!plan) return;
+
+  document.getElementById('task-title').textContent = `Day ${currentDay}`;
+  document.getElementById('task-date').textContent = `${plan.date} ${plan.weekday}`;
+
+  const phaseBadge = document.getElementById('task-phase');
+  phaseBadge.textContent = plan.phase;
+  const phaseColors = {'基础梳理': 'badge-primary', '强化刷题': 'badge-success', '模考冲刺': 'badge-warning', '考前调整': 'badge-danger'};
+  phaseBadge.className = 'badge ' + (phaseColors[plan.phase] || 'badge-primary');
+
+  document.getElementById('task-recite').textContent = plan.recite;
+  document.getElementById('task-practice').textContent = plan.practice;
+
+  // 完成状态
+  const isCompleted = Store.isDayCompleted(currentDay);
+  const btn = document.getElementById('complete-btn');
+  const statusBadge = document.getElementById('task-status-badge');
+  if (isCompleted) {
+    btn.textContent = '✅ 已完成（点击取消）';
+    btn.className = 'btn btn-outline btn-lg';
+    statusBadge.innerHTML = '<span class="badge badge-success">✅ 已完成</span>';
+  } else {
+    btn.textContent = '标记为已完成';
+    btn.className = 'btn btn-success btn-lg';
+    statusBadge.innerHTML = '<span class="badge badge-warning">⏳ 未完成</span>';
+  }
+
+  // 加载笔记
+  const notes = Store.get('study_notes', {});
+  document.getElementById('study-note').value = notes[currentDay] || '';
+
+  updateStats();
+}
+
+function toggleComplete() {
+  const isCompleted = Store.isDayCompleted(currentDay);
+  Store.setDayCompleted(currentDay, !isCompleted);
+  if (!isCompleted) {
+    Utils.showToast('🎉 恭喜完成 Day ' + currentDay + '！继续加油！', 'success');
+  } else {
+    Utils.showToast('已取消完成标记', 'info');
+  }
+  renderTask();
+}
+
+function saveNote() {
+  const note = document.getElementById('study-note').value;
+  const notes = Store.get('study_notes', {});
+  notes[currentDay] = note;
+  Store.set('study_notes', notes);
+  Utils.showToast('笔记已保存', 'success');
+}
+
+function clearNote() {
+  document.getElementById('study-note').value = '';
+  saveNote();
+}
+
+function updateStats() {
+  const progress = Store.getPlanProgress();
+  const completed = Object.values(progress).filter(v => v).length;
+  document.getElementById('stat-completed').textContent = completed;
+  document.getElementById('stat-remaining').textContent = 42 - completed;
+  document.getElementById('stat-rate').textContent = Math.round(completed / 42 * 100) + '%';
+  document.getElementById('stat-days-left').textContent = Utils.daysUntilExam();
+  document.getElementById('overall-progress').style.width = Math.round(completed / 42 * 100) + '%';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initDaySelect();
+  renderTask();
+});
+</script>
+</body>
+</html>

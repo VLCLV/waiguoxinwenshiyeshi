@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="新闻史复习">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1F3864">
+  <meta name="format-detection" content="telephone=no">
+  <title>模拟考试 - 外国新闻事业史复习助手</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="exam">
+<div id="navbar-placeholder"></div>
+
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">📝 模拟考试</h1>
+    <p class="page-subtitle">全真模拟考试环境，限时答题，自动判分</p>
+  </div>
+
+  <!-- 考试记录统计 -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-number" id="exam-count">0</div>
+      <div class="stat-label">考试次数</div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-number" id="avg-score">--</div>
+      <div class="stat-label">平均得分</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="stat-number" id="best-score">--</div>
+      <div class="stat-label">最高分</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-number" id="last-score">--</div>
+      <div class="stat-label">最近得分</div>
+    </div>
+  </div>
+
+  <!-- 考试设置 -->
+  <div class="card" id="exam-setup">
+    <div class="card-title">⚙️ 考试设置</div>
+    <div class="flex gap-16 flex-wrap">
+      <div class="form-group" style="margin-bottom: 0; min-width: 180px;">
+        <label class="form-label">试卷类型</label>
+        <select class="form-select" id="exam-type">
+          <option value="full">完整试卷（单选30+多选5+名词3+简答2+论述1）</option>
+          <option value="quick">快速测验（单选20+多选5）</option>
+          <option value="objective">客观题专练（单选40+多选10）</option>
+          <option value="subjective">主观题专练（名词5+简答3+论述2）</option>
+          <option value="random">随机组卷（40题）</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 0; min-width: 150px;">
+        <label class="form-label">考试时长</label>
+        <select class="form-select" id="exam-duration">
+          <option value="30">30分钟</option>
+          <option value="45" selected>45分钟</option>
+          <option value="60">60分钟</option>
+          <option value="90">90分钟</option>
+          <option value="0">不限时</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">&nbsp;</label>
+        <button class="btn btn-primary btn-lg" onclick="startExam()">🚀 开始考试</button>
+      </div>
+    </div>
+    <div class="mt-16" style="padding: 12px; background: #FFF8E1; border-radius: 6px; font-size: 13px; color: #806000;">
+      💡 <strong>考试说明：</strong>考试开始后将计时，客观题自动判分，主观题请自行对照答案评分。考试结束后可查看详细解析和错题。
+    </div>
+  </div>
+
+  <!-- 考试进行中 -->
+  <div id="exam-running" style="display: none;">
+    <!-- 考试头部 -->
+    <div class="card" style="position: sticky; top: 70px; z-index: 50;">
+      <div class="flex-between">
+        <div>
+          <span class="badge badge-primary" id="exam-title-badge"></span>
+          <span class="badge badge-info ml-8" id="exam-progress-badge"></span>
+        </div>
+        <div class="flex gap-16 items-center">
+          <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: 800; color: var(--danger);" id="timer">45:00</div>
+            <div style="font-size: 11px; color: var(--text-light);">剩余时间</div>
+          </div>
+          <button class="btn btn-success" onclick="submitExam()">✅ 交卷</button>
+        </div>
+      </div>
+      <div class="progress-bar mt-8"><div class="progress-fill" id="exam-progress" style="width: 0%"></div></div>
+    </div>
+
+    <!-- 题目区域 -->
+    <div id="exam-questions"></div>
+
+    <!-- 答题卡 -->
+    <div class="card" style="position: sticky; bottom: 20px;">
+      <div class="card-title">📋 答题卡</div>
+      <div id="answer-sheet" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+      <div class="mt-16 text-center">
+        <button class="btn btn-success btn-lg" onclick="submitExam()">✅ 提交试卷</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 考试结果 -->
+  <div id="exam-result" style="display: none;">
+    <div class="card text-center" style="padding: 40px;">
+      <div id="result-emoji" style="font-size: 64px; margin-bottom: 16px;">🎉</div>
+      <h2 style="color: var(--primary-dark); margin-bottom: 8px;">考试完成！</h2>
+      <div style="font-size: 48px; font-weight: 800; color: var(--primary); margin: 16px 0;" id="result-score">0 分</div>
+      <div id="result-message" style="font-size: 16px; color: var(--text-light); margin-bottom: 24px;"></div>
+
+      <div class="stats-grid" style="max-width: 600px; margin: 0 auto 24px;">
+        <div class="stat-card">
+          <div class="stat-number" id="result-total">0</div>
+          <div class="stat-label">总题数</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-number" id="result-correct">0</div>
+          <div class="stat-label">正确</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-number" id="result-wrong">0</div>
+          <div class="stat-label">错误</div>
+        </div>
+        <div class="stat-card accent">
+          <div class="stat-number" id="result-rate">0%</div>
+          <div class="stat-label">正确率</div>
+        </div>
+      </div>
+
+      <div class="btn-group" style="justify-content: center;">
+        <button class="btn btn-primary" onclick="startExam()">🔄 再考一次</button>
+        <button class="btn btn-outline" onclick="backToSetup()">返回设置</button>
+        <a href="mistakes.html" class="btn btn-danger">❌ 查看错题本</a>
+      </div>
+    </div>
+
+    <!-- 详细解析 -->
+    <div class="card">
+      <div class="card-title">📝 详细解析</div>
+      <div id="result-detail"></div>
+    </div>
+  </div>
+
+  <!-- 历史记录 -->
+  <div class="card" id="history-card">
+    <div class="card-title">📊 历史考试记录</div>
+    <div id="history-content"></div>
+  </div>
+</div>
+
+<div id="footer-placeholder"></div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+let examQuestions = [];
+let examAnswers = {};
+let examTimer = null;
+let examTimeLeft = 0;
+let examTotalTime = 0;
+
+function updateStats() {
+  const records = Store.getExamRecords();
+  document.getElementById('exam-count').textContent = records.length;
+  if (records.length > 0) {
+    const scores = records.map(r => r.score);
+    document.getElementById('avg-score').textContent = Math.round(scores.reduce((a,b) => a+b, 0) / scores.length);
+    document.getElementById('best-score').textContent = Math.max(...scores);
+    document.getElementById('last-score').textContent = records[records.length - 1].score;
+  }
+  renderHistory();
+}
+
+function renderHistory() {
+  const records = Store.getExamRecords();
+  const container = document.getElementById('history-content');
+
+  if (records.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📝</div><div class="title">暂无考试记录</div><p>开始你的第一次模拟考试吧！</p></div>';
+    return;
+  }
+
+  let html = '<div class="table-wrapper"><table class="data-table"><thead><tr><th>序号</th><th>日期</th><th>试卷类型</th><th>得分</th><th>正确率</th><th>用时</th><th>操作</th></tr></thead><tbody>';
+  records.slice().reverse().forEach((r, i) => {
+    const date = new Date(r.date);
+    html += `
+      <tr>
+        <td>${records.length - i}</td>
+        <td>${date.toLocaleString('zh-CN')}</td>
+        <td>${r.typeName}</td>
+        <td><strong style="color: ${r.score >= 80 ? 'var(--success)' : r.score >= 60 ? 'var(--warning)' : 'var(--danger)'};">${r.score}分</strong></td>
+        <td>${r.rate}%</td>
+        <td>${r.timeUsed}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="viewExamDetail(${r.id})">查看详情</button></td>
+      </tr>
+    `;
+  });
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+}
+
+function generateExam(type) {
+  let questions = [];
+  const q = APP_DATA.questions;
+
+  if (type === 'full') {
+    questions = [
+      ...Utils.sample(q.single, 30).map(x => ({...x, _type: 'single'})),
+      ...Utils.sample(q.multiple, 5).map(x => ({...x, _type: 'multiple'})),
+      ...Utils.sample(q.term, 3).map(x => ({...x, _type: 'term'})),
+      ...Utils.sample(q.short, 2).map(x => ({...x, _type: 'short'})),
+      ...Utils.sample(q.essay, 1).map(x => ({...x, _type: 'essay'}))
+    ];
+  } else if (type === 'quick') {
+    questions = [
+      ...Utils.sample(q.single, 20).map(x => ({...x, _type: 'single'})),
+      ...Utils.sample(q.multiple, 5).map(x => ({...x, _type: 'multiple'}))
+    ];
+  } else if (type === 'objective') {
+    questions = [
+      ...Utils.sample(q.single, 40).map(x => ({...x, _type: 'single'})),
+      ...Utils.sample(q.multiple, 10).map(x => ({...x, _type: 'multiple'}))
+    ];
+  } else if (type === 'subjective') {
+    questions = [
+      ...Utils.sample(q.term, 5).map(x => ({...x, _type: 'term'})),
+      ...Utils.sample(q.short, 3).map(x => ({...x, _type: 'short'})),
+      ...Utils.sample(q.essay, 2).map(x => ({...x, _type: 'essay'}))
+    ];
+  } else {
+    const all = [
+      ...q.single.map(x => ({...x, _type: 'single'})),
+      ...q.multiple.map(x => ({...x, _type: 'multiple'})),
+      ...q.term.map(x => ({...x, _type: 'term'})),
+      ...q.short.map(x => ({...x, _type: 'short'})),
+      ...q.essay.map(x => ({...x, _type: 'essay'}))
+    ];
+    questions = Utils.sample(all, 40);
+  }
+
+  return questions;
+}
+
+function startExam() {
+  const type = document.getElementById('exam-type').value;
+  const duration = parseInt(document.getElementById('exam-duration').value);
+
+  examQuestions = generateExam(type);
+  examAnswers = {};
+  examTotalTime = duration * 60;
+  examTimeLeft = examTotalTime;
+
+  const typeNames = {
+    full: '完整试卷', quick: '快速测验', objective: '客观题专练',
+    subjective: '主观题专练', random: '随机组卷'
+  };
+
+  document.getElementById('exam-title-badge').textContent = typeNames[type];
+  document.getElementById('exam-setup').style.display = 'none';
+  document.getElementById('history-card').style.display = 'none';
+  document.getElementById('exam-result').style.display = 'none';
+  document.getElementById('exam-running').style.display = 'block';
+
+  renderExamQuestions();
+  renderAnswerSheet();
+
+  if (duration > 0) {
+    startTimer();
+  } else {
+    document.getElementById('timer').textContent = '不限时';
+  }
+}
+
+function startTimer() {
+  if (examTimer) clearInterval(examTimer);
+  examTimer = setInterval(() => {
+    examTimeLeft--;
+    if (examTimeLeft <= 0) {
+      clearInterval(examTimer);
+      Utils.showToast('⏰ 时间到！自动交卷', 'warning');
+      submitExam();
+      return;
+    }
+    const min = Math.floor(examTimeLeft / 60);
+    const sec = examTimeLeft % 60;
+    document.getElementById('timer').textContent = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    if (examTimeLeft < 300) {
+      document.getElementById('timer').style.color = 'var(--danger)';
+    }
+  }, 1000);
+}
+
+function renderExamQuestions() {
+  const container = document.getElementById('exam-questions');
+  let html = '';
+  const typeOrder = ['single', 'multiple', 'term', 'short', 'essay'];
+  const typeNames = { single: '一、单选题', multiple: '二、多选题', term: '三、名词解释', short: '四、简答题', essay: '五、论述题' };
+
+  let globalNum = 0;
+  typeOrder.forEach(type => {
+    const typeQuestions = examQuestions.filter(q => q._type === type);
+    if (typeQuestions.length === 0) return;
+
+    html += `<div class="card"><div class="card-title">${typeNames[type]}（共${typeQuestions.length}题）</div>`;
+
+    typeQuestions.forEach(q => {
+      globalNum++;
+      q._globalNum = globalNum;
+      html += `<div style="margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px dashed var(--border);">`;
+      html += `<div style="font-weight: 600; margin-bottom: 10px;">${globalNum}. ${Utils.escapeHtml(q.question)}</div>`;
+
+      if (type === 'single' || type === 'multiple') {
+        const labels = ['A', 'B', 'C', 'D'];
+        html += '<div class="options-list">';
+        q.options.forEach((opt, i) => {
+          html += `
+            <div class="option-item" onclick="selectExamOption(${globalNum}, '${labels[i]}', '${type}')" id="opt-${globalNum}-${i}">
+              <span class="option-label">${labels[i]}.</span>
+              <span>${Utils.escapeHtml(opt)}</span>
+            </div>
+          `;
+        });
+        html += '</div>';
+      } else {
+        html += `<textarea class="form-textarea" placeholder="请输入你的回答..." oninput="examAnswers[${globalNum}] = this.value" style="margin-top: 8px;"></textarea>`;
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+  document.getElementById('exam-progress-badge').textContent = `共 ${examQuestions.length} 题`;
+}
+
+function selectExamOption(num, label, type) {
+  if (type === 'single') {
+    examAnswers[num] = label;
+    // 更新UI
+    document.querySelectorAll(`[id^="opt-${num}-"]`).forEach(el => el.classList.remove('selected'));
+    const idx = ['A','B','C','D'].indexOf(label);
+    document.getElementById(`opt-${num}-${idx}`).classList.add('selected');
+  } else {
+    if (!examAnswers[num]) examAnswers[num] = [];
+    if (examAnswers[num].includes(label)) {
+      examAnswers[num] = examAnswers[num].filter(l => l !== label);
+    } else {
+      examAnswers[num].push(label);
+      examAnswers[num].sort();
+    }
+    const idx = ['A','B','C','D'].indexOf(label);
+    document.getElementById(`opt-${num}-${idx}`).classList.toggle('selected');
+  }
+  updateAnswerSheet();
+}
+
+function renderAnswerSheet() {
+  const container = document.getElementById('answer-sheet');
+  let html = '';
+  examQuestions.forEach(q => {
+    const num = q._globalNum;
+    const answered = examAnswers[num] && (Array.isArray(examAnswers[num]) ? examAnswers[num].length > 0 : examAnswers[num] !== '');
+    html += `<div style="width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; cursor: pointer; background: ${answered ? 'var(--success)' : '#E0E6ED'}; color: ${answered ? 'white' : '#666'};" onclick="scrollToQuestion(${num})" id="sheet-${num}">${num}</div>`;
+  });
+  container.innerHTML = html;
+}
+
+function updateAnswerSheet() {
+  examQuestions.forEach(q => {
+    const num = q._globalNum;
+    const answered = examAnswers[num] && (Array.isArray(examAnswers[num]) ? examAnswers[num].length > 0 : examAnswers[num] !== '');
+    const el = document.getElementById(`sheet-${num}`);
+    if (el) {
+      el.style.background = answered ? 'var(--success)' : '#E0E6ED';
+      el.style.color = answered ? 'white' : '#666';
+    }
+  });
+  // 进度
+  const answered = Object.keys(examAnswers).filter(k => examAnswers[k] && (Array.isArray(examAnswers[k]) ? examAnswers[k].length > 0 : examAnswers[k] !== '')).length;
+  document.getElementById('exam-progress').style.width = (answered / examQuestions.length * 100) + '%';
+}
+
+function scrollToQuestion(num) {
+  const q = examQuestions.find(q => q._globalNum === num);
+  if (q) {
+    // 滚动到题目
+    const cards = document.querySelectorAll('#exam-questions .card');
+    let targetCard = null;
+    cards.forEach(card => {
+      if (card.textContent.includes(num + '.')) {
+        targetCard = card;
+      }
+    });
+    if (targetCard) targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function submitExam() {
+  if (examTimer) clearInterval(examTimer);
+
+  let correct = 0, wrong = 0, total = 0;
+  const details = [];
+
+  examQuestions.forEach(q => {
+    const num = q._globalNum;
+    const userAnswer = examAnswers[num];
+    let isCorrect = null;
+
+    if (q._type === 'single' || q._type === 'multiple') {
+      total++;
+      const correctAnswer = q.answer.replace(/[^A-D]/g, '').split('').sort().join('');
+      const userAns = Array.isArray(userAnswer) ? userAnswer.sort().join('') : (userAnswer || '');
+      isCorrect = userAns === correctAnswer;
+      if (isCorrect) correct++;
+      else wrong++;
+
+      // 加入错题本
+      if (!isCorrect) {
+        Store.addMistake({
+          type: q._type, id: q.id, question: q.question,
+          answer: q.answer, options: q.options || []
+        });
+      }
+    }
+
+    details.push({
+      num, type: q._type, question: q.question,
+      userAnswer: Array.isArray(userAnswer) ? userAnswer.join('') : (userAnswer || '未作答'),
+      correctAnswer: q.answer, isCorrect, options: q.options || []
+    });
+  });
+
+  const score = total > 0 ? Math.round(correct / total * 100) : 0;
+  const rate = total > 0 ? Math.round(correct / total * 100) : 0;
+  const timeUsed = examTotalTime > 0 ? formatTime(examTotalTime - examTimeLeft) : '不限时';
+
+  // 保存记录
+  const typeNames = { full: '完整试卷', quick: '快速测验', objective: '客观题专练', subjective: '主观题专练', random: '随机组卷' };
+  Store.addExamRecord({
+    type: document.getElementById('exam-type').value,
+    typeName: typeNames[document.getElementById('exam-type').value],
+    score, rate, correct, wrong, total,
+    timeUsed, details
+  });
+
+  // 显示结果
+  document.getElementById('exam-running').style.display = 'none';
+  document.getElementById('exam-result').style.display = 'block';
+  document.getElementById('result-score').textContent = score + ' 分';
+  document.getElementById('result-total').textContent = examQuestions.length;
+  document.getElementById('result-correct').textContent = correct;
+  document.getElementById('result-wrong').textContent = wrong;
+  document.getElementById('result-rate').textContent = rate + '%';
+
+  const emoji = score >= 90 ? '🏆' : score >= 80 ? '🎉' : score >= 60 ? '💪' : '📚';
+  const message = score >= 90 ? '太棒了！优秀成绩！' : score >= 80 ? '很好！继续保持！' : score >= 60 ? '及格了，还需努力！' : '别灰心，多练习一定会进步！';
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-message').textContent = message;
+
+  // 详细解析
+  renderResultDetail(details);
+  updateStats();
+}
+
+function renderResultDetail(details) {
+  const container = document.getElementById('result-detail');
+  let html = '';
+  details.forEach(d => {
+    const bgColor = d.isCorrect === true ? '#E8F5E9' : d.isCorrect === false ? '#FFEBEE' : '#F5F5F5';
+    const borderColor = d.isCorrect === true ? 'var(--success)' : d.isCorrect === false ? 'var(--danger)' : '#999';
+    html += `
+      <div style="background: ${bgColor}; border-left: 4px solid ${borderColor}; border-radius: 0 8px 8px 0; padding: 16px; margin-bottom: 12px;">
+        <div class="flex-between mb-8">
+          <span class="badge badge-info">${QUESTION_TYPE_MAP[d.type]} 第${d.num}题</span>
+          <span>${d.isCorrect === true ? '<span class="badge badge-success">✅ 正确</span>' : d.isCorrect === false ? '<span class="badge badge-danger">❌ 错误</span>' : '<span class="badge badge-warning">📝 主观题</span>'}</span>
+        </div>
+        <div style="font-weight: 600; margin-bottom: 8px;">${Utils.escapeHtml(d.question)}</div>
+        ${d.options.length > 0 ? `<div style="font-size: 13px; color: #555; margin-bottom: 8px;">${['A','B','C','D'].map((l,i) => l + '. ' + Utils.escapeHtml(d.options[i])).join('　')}</div>` : ''}
+        <div style="font-size: 13px;"><strong>你的答案：</strong><span style="color: ${d.isCorrect === false ? 'var(--danger)' : 'var(--success)'};">${Utils.escapeHtml(d.userAnswer)}</span></div>
+        <div style="font-size: 13px;"><strong>正确答案：</strong><span style="color: var(--success); font-weight: 600;">${Utils.escapeHtml(d.correctAnswer)}</span></div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function formatTime(seconds) {
+  const min = Math.floor(seconds / 60);
+  const sec = seconds % 60;
+  return `${min}分${sec}秒`;
+}
+
+function viewExamDetail(id) {
+  const records = Store.getExamRecords();
+  const record = records.find(r => r.id === id);
+  if (record) {
+    document.getElementById('exam-setup').style.display = 'none';
+    document.getElementById('history-card').style.display = 'none';
+    document.getElementById('exam-result').style.display = 'block';
+    document.getElementById('result-score').textContent = record.score + ' 分';
+    document.getElementById('result-total').textContent = record.total;
+    document.getElementById('result-correct').textContent = record.correct;
+    document.getElementById('result-wrong').textContent = record.wrong;
+    document.getElementById('result-rate').textContent = record.rate + '%';
+    document.getElementById('result-message').textContent = '考试时间：' + record.timeUsed;
+    renderResultDetail(record.details);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function backToSetup() {
+  document.getElementById('exam-running').style.display = 'none';
+  document.getElementById('exam-result').style.display = 'none';
+  document.getElementById('exam-setup').style.display = 'block';
+  document.getElementById('history-card').style.display = 'block';
+}
+
+document.addEventListener('DOMContentLoaded', updateStats);
+</script>
+</body>
+</html>

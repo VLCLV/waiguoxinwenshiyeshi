@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="新闻史复习">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1F3864">
+  <meta name="format-detection" content="telephone=no">
+  <title>首页 - 外国新闻事业史复习助手</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="index">
+<div id="navbar-placeholder"></div>
+
+<div class="container">
+  <!-- 页面标题 -->
+  <div class="page-header">
+    <h1 class="page-title">📊 复习仪表盘</h1>
+    <p class="page-subtitle">外国新闻事业史 · 42天复习计划总览</p>
+  </div>
+
+  <!-- 倒计时 + 今日任务 -->
+  <div class="stats-grid">
+    <div class="stat-card danger">
+      <div class="countdown-number" id="days-left">--</div>
+      <div class="stat-label">距离考试（天）</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="current-day">--</div>
+      <div class="stat-label">当前复习天数</div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-number" id="completed-days">0</div>
+      <div class="stat-label">已完成天数</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="stat-number" id="completion-rate">0%</div>
+      <div class="stat-label">计划完成率</div>
+    </div>
+  </div>
+
+  <!-- 整体进度 -->
+  <div class="card">
+    <div class="card-title">📈 整体复习进度</div>
+    <div style="margin-bottom: 12px;">
+      <div class="flex-between mb-8">
+        <span class="font-bold">复习计划完成度</span>
+        <span id="plan-progress-text">0 / 42 天</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="plan-progress-bar" style="width: 0%"></div></div>
+    </div>
+    <div style="margin-bottom: 12px;">
+      <div class="flex-between mb-8">
+        <span class="font-bold">背诵资料掌握度</span>
+        <span id="material-progress-text">0 / 537 条</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill success" id="material-progress-bar" style="width: 0%"></div></div>
+    </div>
+    <div>
+      <div class="flex-between mb-8">
+        <span class="font-bold">题库完成度</span>
+        <span id="quiz-progress-text">0 / 366 题</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill warning" id="quiz-progress-bar" style="width: 0%"></div></div>
+    </div>
+  </div>
+
+  <!-- 今日任务卡片 -->
+  <div class="card" id="today-card">
+    <div class="card-title">📋 今日任务（Day <span id="today-day-num"></span>）</div>
+    <div id="today-content"></div>
+    <div class="mt-16 flex-between">
+      <div>
+        <span class="badge" id="today-phase-badge"></span>
+        <span class="badge badge-info" id="today-date-badge"></span>
+      </div>
+      <button class="btn btn-primary" onclick="goToday()">查看详情 →</button>
+    </div>
+  </div>
+
+  <!-- 四阶段概览 -->
+  <div class="card">
+    <div class="card-title">🗂️ 四阶段复习策略</div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr><th>阶段</th><th>时间</th><th>天数</th><th>核心任务</th><th>状态</th></tr>
+        </thead>
+        <tbody>
+          <tr class="phase1">
+            <td><strong>第一阶段<br>基础梳理</strong></td>
+            <td>9/13 - 9/26</td>
+            <td>14天</td>
+            <td>按12个国家/主题逐条过背诵表，建立时间轴框架</td>
+            <td id="phase1-status">-</td>
+          </tr>
+          <tr class="phase2">
+            <td><strong>第二阶段<br>强化刷题</strong></td>
+            <td>9/27 - 10/10</td>
+            <td>14天</td>
+            <td>高频考点强化 + 刷完全部366题，建立错题本</td>
+            <td id="phase2-status">-</td>
+          </tr>
+          <tr class="phase3">
+            <td><strong>第三阶段<br>模考冲刺</strong></td>
+            <td>10/11 - 10/20</td>
+            <td>10天</td>
+            <td>3套模拟卷 + 查漏补缺，薄弱环节清零</td>
+            <td id="phase3-status">-</td>
+          </tr>
+          <tr class="phase4">
+            <td><strong>第四阶段<br>考前调整</strong></td>
+            <td>10/21 - 10/24</td>
+            <td>4天</td>
+            <td>核心考点速记 + 错题回顾，调整状态</td>
+            <td id="phase4-status">-</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 快捷入口 -->
+  <div class="card">
+    <div class="card-title">🚀 快捷入口</div>
+    <div class="stats-grid" style="margin-bottom: 0;">
+      <a href="today.html" class="stat-card" style="text-decoration: none; color: inherit;">
+        <div style="font-size: 32px;">📋</div>
+        <div class="stat-label" style="font-weight: 600; color: var(--text); margin-top: 8px;">今日任务</div>
+      </a>
+      <a href="materials.html" class="stat-card accent" style="text-decoration: none; color: inherit;">
+        <div style="font-size: 32px;">📖</div>
+        <div class="stat-label" style="font-weight: 600; color: var(--text); margin-top: 8px;">背诵资料</div>
+      </a>
+      <a href="quiz.html" class="stat-card success" style="text-decoration: none; color: inherit;">
+        <div style="font-size: 32px;">✍️</div>
+        <div class="stat-label" style="font-weight: 600; color: var(--text); margin-top: 8px;">题库练习</div>
+      </a>
+      <a href="exam.html" class="stat-card warning" style="text-decoration: none; color: inherit;">
+        <div style="font-size: 32px;">📝</div>
+        <div class="stat-label" style="font-weight: 600; color: var(--text); margin-top: 8px;">模拟考试</div>
+      </a>
+      <a href="mistakes.html" class="stat-card danger" style="text-decoration: none; color: inherit;">
+        <div style="font-size: 32px;">❌</div>
+        <div class="stat-label" style="font-weight: 600; color: var(--text); margin-top: 8px;">错题本</div>
+      </a>
+      <a href="keypoints.html" class="stat-card" style="text-decoration: none; color: inherit; border-top-color: #9B59B6;">
+        <div style="font-size: 32px;">⭐</div>
+        <div class="stat-label" style="font-weight: 600; color: var(--text); margin-top: 8px;">核心考点</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 数据统计 -->
+  <div class="card">
+    <div class="card-title">📊 数据统计</div>
+    <div class="stats-grid" style="margin-bottom: 0;">
+      <div class="stat-card">
+        <div class="stat-number">12</div>
+        <div class="stat-label">背诵主题</div>
+      </div>
+      <div class="stat-card accent">
+        <div class="stat-number">537</div>
+        <div class="stat-label">背诵知识点</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-number">366</div>
+        <div class="stat-label">题库题目</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-number" id="mistake-count">0</div>
+        <div class="stat-label">错题数量</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 重置数据 -->
+  <div class="card" style="border-left: 4px solid var(--danger);">
+    <div class="flex-between">
+      <div>
+        <strong>⚠️ 数据管理</strong>
+        <p style="color: var(--text-light); font-size: 13px; margin-top: 4px;">所有学习数据保存在浏览器本地（localStorage），清除浏览器数据会丢失。可手动重置所有进度。</p>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="resetAllData()">重置所有数据</button>
+    </div>
+  </div>
+</div>
+
+<div id="footer-placeholder"></div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+function goToday() { window.location.href = 'today.html'; }
+
+function resetAllData() {
+  if (Utils.confirm('确定要重置所有学习数据吗？此操作不可恢复！')) {
+    Store.resetAll();
+    Utils.showToast('所有数据已重置', 'success');
+    setTimeout(() => location.reload(), 1000);
+  }
+}
+
+function renderDashboard() {
+  // 倒计时
+  const daysLeft = Utils.daysUntilExam();
+  document.getElementById('days-left').textContent = daysLeft > 0 ? daysLeft : 0;
+
+  // 当前天数
+  const currentDay = Utils.getCurrentDay();
+  document.getElementById('current-day').textContent = 'Day ' + currentDay;
+
+  // 已完成天数
+  const progress = Store.getPlanProgress();
+  const completedDays = Object.values(progress).filter(v => v).length;
+  document.getElementById('completed-days').textContent = completedDays;
+
+  // 完成率
+  const rate = Math.round(completedDays / 42 * 100);
+  document.getElementById('completion-rate').textContent = rate + '%';
+
+  // 计划进度条
+  document.getElementById('plan-progress-text').textContent = completedDays + ' / 42 天';
+  document.getElementById('plan-progress-bar').style.width = rate + '%';
+
+  // 背诵资料掌握度
+  const mastered = Store.getMasteredMaterials();
+  const masteredCount = Object.values(mastered).filter(v => v).length;
+  document.getElementById('material-progress-text').textContent = masteredCount + ' / 537 条';
+  document.getElementById('material-progress-bar').style.width = Math.round(masteredCount / 537 * 100) + '%';
+
+  // 题库完成度
+  const records = Store.getQuizRecords();
+  const quizDone = Object.keys(records).length;
+  document.getElementById('quiz-progress-text').textContent = quizDone + ' / 366 题';
+  document.getElementById('quiz-progress-bar').style.width = Math.round(quizDone / 366 * 100) + '%';
+
+  // 错题数量
+  document.getElementById('mistake-count').textContent = Store.getMistakes().length;
+
+  // 今日任务
+  const todayPlan = APP_DATA.plan[currentDay - 1];
+  if (todayPlan) {
+    document.getElementById('today-day-num').textContent = currentDay;
+    document.getElementById('today-date-badge').textContent = todayPlan.date + ' ' + todayPlan.weekday;
+    const phaseBadge = document.getElementById('today-phase-badge');
+    phaseBadge.textContent = todayPlan.phase;
+    phaseBadge.className = 'badge badge-' + (PHASE_CLASS[todayPlan.phase] ? PHASE_CLASS[todayPlan.phase].replace('phase','') : 'primary');
+
+    const isCompleted = Store.isDayCompleted(currentDay);
+    document.getElementById('today-content').innerHTML = `
+      <div style="margin-bottom: 10px;">
+        <div class="form-label">📖 背诵任务（约45分钟）</div>
+        <div style="padding: 10px 14px; background: #F0F4F8; border-radius: 6px;">${todayPlan.recite}</div>
+      </div>
+      <div>
+        <div class="form-label">✍️ 刷题/练习任务（约15分钟）</div>
+        <div style="padding: 10px 14px; background: #F0F7EE; border-radius: 6px;">${todayPlan.practice}</div>
+      </div>
+      ${isCompleted ? '<div style="margin-top: 12px;"><span class="badge badge-success">✅ 今日任务已完成</span></div>' : ''}
+    `;
+  }
+
+  // 阶段状态
+  const phaseRanges = [[1,14],[15,28],[29,38],[39,42]];
+  phaseRanges.forEach((range, i) => {
+    let done = 0, total = range[1] - range[0] + 1;
+    for (let d = range[0]; d <= range[1]; d++) {
+      if (Store.isDayCompleted(d)) done++;
+    }
+    const el = document.getElementById('phase' + (i+1) + '-status');
+    if (done === total) {
+      el.innerHTML = '<span class="badge badge-success">✅ 已完成</span>';
+    } else if (currentDay >= range[0] && currentDay <= range[1]) {
+      el.innerHTML = `<span class="badge badge-warning">🔄 进行中 (${done}/${total})</span>`;
+    } else if (currentDay < range[0]) {
+      el.innerHTML = '<span class="badge badge-info">⏳ 未开始</span>';
+    } else {
+      el.innerHTML = `<span class="badge badge-danger">⚠️ 未完成 (${done}/${total})</span>`;
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', renderDashboard);
+</script>
+</body>
+</html>

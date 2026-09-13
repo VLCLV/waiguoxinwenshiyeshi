@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="新闻史复习">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1F3864">
+  <meta name="format-detection" content="telephone=no">
+  <title>复习日历 - 外国新闻事业史复习助手</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="calendar">
+<div id="navbar-placeholder"></div>
+
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">📅 复习日历</h1>
+    <p class="page-subtitle">42天完整复习计划，点击任意天数查看详情</p>
+  </div>
+
+  <!-- 统计概览 -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-number">42</div>
+      <div class="stat-label">总天数</div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-number" id="stat-done">0</div>
+      <div class="stat-label">已完成</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-number" id="stat-pending">42</div>
+      <div class="stat-label">未完成</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="stat-number" id="stat-rate">0%</div>
+      <div class="stat-label">完成率</div>
+    </div>
+  </div>
+
+  <!-- 筛选 -->
+  <div class="card">
+    <div class="card-title">🔍 筛选与操作</div>
+    <div class="flex gap-16 flex-wrap">
+      <div class="form-group" style="margin-bottom: 0; min-width: 180px;">
+        <label class="form-label">按阶段筛选</label>
+        <select class="form-select" id="phase-filter" onchange="renderCalendar()">
+          <option value="all">全部阶段</option>
+          <option value="基础梳理">第一阶段：基础梳理</option>
+          <option value="强化刷题">第二阶段：强化刷题</option>
+          <option value="模考冲刺">第三阶段：模考冲刺</option>
+          <option value="考前调整">第四阶段：考前调整</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 0; min-width: 180px;">
+        <label class="form-label">按完成状态</label>
+        <select class="form-select" id="status-filter" onchange="renderCalendar()">
+          <option value="all">全部状态</option>
+          <option value="completed">已完成</option>
+          <option value="pending">未完成</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">&nbsp;</label>
+        <div class="btn-group">
+          <button class="btn btn-outline btn-sm" onclick="markPhaseComplete()">标记当前阶段完成</button>
+          <button class="btn btn-danger btn-sm" onclick="resetProgress()">重置进度</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 日历视图 -->
+  <div class="card">
+    <div class="card-title">📆 42天计划日历</div>
+    <div id="calendar-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;"></div>
+  </div>
+
+  <!-- 详细列表 -->
+  <div class="card">
+    <div class="card-title">📋 详细任务列表</div>
+    <div class="table-wrapper">
+      <table class="data-table" id="plan-table">
+        <thead>
+          <tr>
+            <th style="width: 60px;">天数</th>
+            <th style="width: 90px;">日期</th>
+            <th style="width: 80px;">阶段</th>
+            <th>背诵任务</th>
+            <th>刷题任务</th>
+            <th style="width: 80px;">状态</th>
+            <th style="width: 80px;">操作</th>
+          </tr>
+        </thead>
+        <tbody id="plan-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 阶段详情 -->
+  <div class="card">
+    <div class="card-title">🗂️ 各阶段详情</div>
+    <div id="phase-details"></div>
+  </div>
+</div>
+
+<div id="footer-placeholder"></div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+function updateStats() {
+  const progress = Store.getPlanProgress();
+  const done = Object.values(progress).filter(v => v).length;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-pending').textContent = 42 - done;
+  document.getElementById('stat-rate').textContent = Math.round(done / 42 * 100) + '%';
+}
+
+function renderCalendar() {
+  const phaseFilter = document.getElementById('phase-filter').value;
+  const statusFilter = document.getElementById('status-filter').value;
+  const grid = document.getElementById('calendar-grid');
+  grid.innerHTML = '';
+
+  const currentDay = Utils.getCurrentDay();
+
+  APP_DATA.plan.forEach((plan, idx) => {
+    const day = idx + 1;
+    const isCompleted = Store.isDayCompleted(day);
+    const isToday = day === currentDay;
+
+    // 筛选
+    if (phaseFilter !== 'all' && plan.phase !== phaseFilter) return;
+    if (statusFilter === 'completed' && !isCompleted) return;
+    if (statusFilter === 'pending' && isCompleted) return;
+
+    const phaseColors = {
+      '基础梳理': { bg: '#D6E4F0', border: '#2F5496' },
+      '强化刷题': { bg: '#E2EFDA', border: '#70AD47' },
+      '模考冲刺': { bg: '#FFF2CC', border: '#FFC000' },
+      '考前调整': { bg: '#FCE4D6', border: '#ED7D31' }
+    };
+    const colors = phaseColors[plan.phase] || phaseColors['基础梳理'];
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+      background: ${isCompleted ? '#E8F5E9' : colors.bg};
+      border: 2px solid ${isToday ? '#C00000' : isCompleted ? '#70AD47' : colors.border};
+      border-radius: 8px; padding: 12px; cursor: pointer;
+      transition: all 0.2s; position: relative;
+    `;
+    card.onmouseover = () => card.style.transform = 'translateY(-2px)';
+    card.onmouseout = () => card.style.transform = 'translateY(0)';
+    card.onclick = () => window.location.href = 'today.html?day=' + day;
+
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <strong style="font-size: 16px;">Day ${day}</strong>
+        ${isCompleted ? '<span style="font-size: 18px;">✅</span>' : isToday ? '<span style="font-size: 12px; background: #C00000; color: white; padding: 2px 8px; border-radius: 10px;">今天</span>' : ''}
+      </div>
+      <div style="font-size: 12px; color: #666; margin-bottom: 4px;">${plan.date} ${plan.weekday}</div>
+      <div style="font-size: 11px; display: inline-block; padding: 2px 8px; border-radius: 10px; background: ${colors.border}; color: white; margin-bottom: 8px;">${plan.phase}</div>
+      <div style="font-size: 12px; color: #333; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${plan.recite}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  renderTable();
+  renderPhaseDetails();
+  updateStats();
+}
+
+function renderTable() {
+  const phaseFilter = document.getElementById('phase-filter').value;
+  const statusFilter = document.getElementById('status-filter').value;
+  const tbody = document.getElementById('plan-tbody');
+  tbody.innerHTML = '';
+
+  APP_DATA.plan.forEach((plan, idx) => {
+    const day = idx + 1;
+    const isCompleted = Store.isDayCompleted(day);
+
+    if (phaseFilter !== 'all' && plan.phase !== phaseFilter) return;
+    if (statusFilter === 'completed' && !isCompleted) return;
+    if (statusFilter === 'pending' && isCompleted) return;
+
+    const phaseClass = PHASE_CLASS[plan.phase] || '';
+    const tr = document.createElement('tr');
+    tr.className = phaseClass + (isCompleted ? ' completed' : '');
+    tr.innerHTML = `
+      <td><strong>Day ${day}</strong></td>
+      <td>${plan.date} ${plan.weekday}</td>
+      <td><span class="badge badge-${phaseClass.replace('phase','')}">${plan.phase}</span></td>
+      <td style="font-size: 13px;">${plan.recite}</td>
+      <td style="font-size: 13px;">${plan.practice}</td>
+      <td>${isCompleted ? '<span class="badge badge-success">✅ 已完成</span>' : '<span class="badge badge-warning">⏳ 未完成</span>'}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="toggleDay(${day})">${isCompleted ? '取消' : '完成'}</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderPhaseDetails() {
+  const phases = [
+    { name: '基础梳理', range: [1, 14], desc: '按12个国家/主题逐条过背诵表，建立时间轴框架', color: '#D6E4F0' },
+    { name: '强化刷题', range: [15, 28], desc: '高频考点强化 + 刷完全部366题，建立错题本', color: '#E2EFDA' },
+    { name: '模考冲刺', range: [29, 38], desc: '3套模拟卷 + 查漏补缺，薄弱环节清零', color: '#FFF2CC' },
+    { name: '考前调整', range: [39, 42], desc: '核心考点速记 + 错题回顾，调整状态', color: '#FCE4D6' }
+  ];
+
+  const container = document.getElementById('phase-details');
+  container.innerHTML = '';
+
+  phases.forEach(phase => {
+    let done = 0;
+    for (let d = phase.range[0]; d <= phase.range[1]; d++) {
+      if (Store.isDayCompleted(d)) done++;
+    }
+    const total = phase.range[1] - phase.range[0] + 1;
+    const rate = Math.round(done / total * 100);
+
+    const div = document.createElement('div');
+    div.style.cssText = `background: ${phase.color}; border-radius: 8px; padding: 16px; margin-bottom: 12px;`;
+    div.innerHTML = `
+      <div class="flex-between mb-8">
+        <strong>${phase.name}（Day ${phase.range[0]}-${phase.range[1]}，共${total}天）</strong>
+        <span class="badge ${rate === 100 ? 'badge-success' : 'badge-warning'}">${done}/${total} 天 · ${rate}%</span>
+      </div>
+      <p style="font-size: 13px; color: #555; margin-bottom: 8px;">${phase.desc}</p>
+      <div class="progress-bar"><div class="progress-fill" style="width: ${rate}%"></div></div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function toggleDay(day) {
+  const isCompleted = Store.isDayCompleted(day);
+  Store.setDayCompleted(day, !isCompleted);
+  renderCalendar();
+  Utils.showToast(isCompleted ? '已取消完成标记' : '🎉 Day ' + day + ' 已完成！', isCompleted ? 'info' : 'success');
+}
+
+function markPhaseComplete() {
+  const currentDay = Utils.getCurrentDay();
+  let range;
+  if (currentDay <= 14) range = [1, 14];
+  else if (currentDay <= 28) range = [15, 28];
+  else if (currentDay <= 38) range = [29, 38];
+  else range = [39, 42];
+
+  if (Utils.confirm(`确定要将 Day ${range[0]}-${range[1]} 全部标记为已完成吗？`)) {
+    for (let d = range[0]; d <= range[1]; d++) {
+      Store.setDayCompleted(d, true);
+    }
+    renderCalendar();
+    Utils.showToast('已标记当前阶段全部完成', 'success');
+  }
+}
+
+function resetProgress() {
+  if (Utils.confirm('确定要重置所有复习进度吗？')) {
+    Store.remove('plan_progress');
+    renderCalendar();
+    Utils.showToast('进度已重置', 'success');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', renderCalendar);
+</script>
+</body>
+</html>

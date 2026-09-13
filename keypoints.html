@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="新闻史复习">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1F3864">
+  <meta name="format-detection" content="telephone=no">
+  <title>核心考点速记 - 外国新闻事业史复习助手</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="keypoints">
+<div id="navbar-placeholder"></div>
+
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">⭐ 核心考点速记</h1>
+    <p class="page-subtitle">53条高频考点 · 选择题/名词解释/简答题必背</p>
+  </div>
+
+  <!-- 统计 -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-number">53</div>
+      <div class="stat-label">核心考点</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="stat-number" id="memorized-count">0</div>
+      <div class="stat-label">已记住</div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-number" id="memorize-rate">0%</div>
+      <div class="stat-label">记忆率</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-number" id="remaining-count">53</div>
+      <div class="stat-label">待记忆</div>
+    </div>
+  </div>
+
+  <!-- 分类标签 -->
+  <div class="card">
+    <div class="card-title">📂 按类别浏览</div>
+    <div class="tabs" id="category-tabs">
+      <button class="tab active" onclick="switchCategory('all')">全部 (53)</button>
+      <button class="tab" onclick="switchCategory('第一/最早')">🏆 第一/最早 (15)</button>
+      <button class="tab" onclick="switchCategory('重要人物')">👤 重要人物 (13)</button>
+      <button class="tab" onclick="switchCategory('重要概念')">📝 重要概念 (10)</button>
+      <button class="tab" onclick="switchCategory('重要文件')">📄 重要文件 (6)</button>
+      <button class="tab" onclick="switchCategory('各国体制')">🏛️ 各国体制 (6)</button>
+    </div>
+    <div id="keypoints-content"></div>
+  </div>
+
+  <!-- 记忆模式 -->
+  <div class="card" style="border-left: 4px solid #9B59B6;">
+    <div class="flex-between">
+      <div>
+        <strong>🧠 闪卡记忆模式</strong>
+        <p style="color: var(--text-light); font-size: 13px; margin: 4px 0 0;">随机抽取核心考点，先回忆再看答案，高效记忆</p>
+      </div>
+      <div class="btn-group">
+        <button class="btn" style="background: #9B59B6; color: white;" onclick="nextFlashcard()">🎴 下一张</button>
+        <button class="btn btn-outline" onclick="flipFlashcard()" id="flip-btn">翻转查看</button>
+        <button class="btn btn-success btn-sm" onclick="markMemorized()" id="memorize-btn">✅ 记住了</button>
+      </div>
+    </div>
+    <div id="flashcard-area" class="mt-16" style="display: none;">
+      <div id="flashcard" style="padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; text-align: center; min-height: 180px; display: flex; flex-direction: column; justify-content: center; cursor: pointer;" onclick="flipFlashcard()">
+        <div id="flashcard-category" class="mb-16" style="display: inline-block; padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 12px; font-size: 12px; margin: 0 auto 16px;"></div>
+        <div id="flashcard-front" style="font-size: 20px; font-weight: 700; line-height: 1.6;"></div>
+        <div id="flashcard-back" style="display: none; font-size: 15px; line-height: 1.8; text-align: left;">
+          <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px;">
+            <div id="flashcard-back-content"></div>
+          </div>
+        </div>
+        <div style="margin-top: 16px; font-size: 12px; opacity: 0.7;">点击卡片翻转</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 易混淆对比 -->
+  <div class="card">
+    <div class="card-title">🔄 易混淆考点对比</div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr><th>对比项</th><th>A</th><th>B</th><th>区分要点</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>世界第一家日报</strong></td>
+            <td>1650年德国《新到新闻》</td>
+            <td>1702年英国《每日新闻》</td>
+            <td>德国是世界第一家，英国是英国第一家</td>
+          </tr>
+          <tr>
+            <td><strong>第一家通讯社</strong></td>
+            <td>1835年法国哈瓦斯社</td>
+            <td>1848年美国港口新闻社（美联社前身）</td>
+            <td>哈瓦斯是世界第一家，美联社是美国第一家</td>
+          </tr>
+          <tr>
+            <td><strong>第一座广播电台</strong></td>
+            <td>1920年美国KDKA电台</td>
+            <td>1922年英国BBC</td>
+            <td>KDKA是世界第一座正式电台，BBC是英国公共广播开端</td>
+          </tr>
+          <tr>
+            <td><strong>第一座电视台</strong></td>
+            <td>1936年英国BBC</td>
+            <td>1939年美国NBC</td>
+            <td>BBC是世界第一座正式电视台</td>
+          </tr>
+          <tr>
+            <td><strong>出版自由文件</strong></td>
+            <td>1644年弥尔顿《论出版自由》</td>
+            <td>1789年法国《人权宣言》</td>
+            <td>弥尔顿是著作，《人权宣言》是第一个正式法律文件</td>
+          </tr>
+          <tr>
+            <td><strong>无产阶级报纸</strong></td>
+            <td>1848年《新莱茵报》（马克思）</td>
+            <td>1900年《火星报》（列宁）</td>
+            <td>《新莱茵报》是第一份马克思主义日报，《火星报》是第一份全俄政治报</td>
+          </tr>
+          <tr>
+            <td><strong>美国廉价报纸</strong></td>
+            <td>1833年《太阳报》（戴）</td>
+            <td>1835年《纽约先驱报》（贝内特）</td>
+            <td>《太阳报》是第一份成功的廉价报纸</td>
+          </tr>
+          <tr>
+            <td><strong>黄色新闻</strong></td>
+            <td>普利策《纽约世界报》</td>
+            <td>赫斯特《纽约新闻报》</td>
+            <td>两人竞争催生黄色新闻潮，"黄孩子"漫画是标志</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="footer-placeholder"></div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+let currentCategory = 'all';
+let currentFlashcard = null;
+let isFlipped = false;
+
+function getKeypoints() {
+  return APP_DATA.materials['核心考点速记'] || [];
+}
+
+function updateStats() {
+  const memorized = Store.get('keypoints_memorized', {});
+  const count = Object.values(memorized).filter(v => v).length;
+  const total = getKeypoints().length;
+  document.getElementById('memorized-count').textContent = count;
+  document.getElementById('memorize-rate').textContent = Math.round(count / total * 100) + '%';
+  document.getElementById('remaining-count').textContent = total - count;
+}
+
+function switchCategory(cat) {
+  currentCategory = cat;
+  document.querySelectorAll('#category-tabs .tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  renderKeypoints();
+}
+
+function renderKeypoints() {
+  const keypoints = getKeypoints();
+  const container = document.getElementById('keypoints-content');
+  const memorized = Store.get('keypoints_memorized', {});
+
+  let filtered = keypoints;
+  if (currentCategory !== 'all') {
+    filtered = keypoints.filter(k => k.time === currentCategory);
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div class="title">该分类暂无内容</div></div>';
+    return;
+  }
+
+  let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 12px;">';
+
+  filtered.forEach((item, idx) => {
+    const globalIdx = keypoints.indexOf(item);
+    const isMem = !!memorized[globalIdx];
+    const catColors = {
+      '第一/最早': '#FFD700',
+      '重要人物': '#87CEEB',
+      '重要概念': '#98FB98',
+      '重要文件': '#FFB6C1',
+      '各国体制': '#DDA0DD'
+    };
+    const color = catColors[item.time] || '#ccc';
+
+    html += `
+      <div style="background: ${isMem ? '#E8F5E9' : 'white'}; border: 2px solid ${isMem ? '#70AD47' : color}; border-radius: 8px; padding: 16px; opacity: ${isMem ? '0.7' : '1'};">
+        <div class="flex-between mb-8">
+          <span class="badge" style="background: ${color}; color: #333;">${item.time}</span>
+          <button class="btn ${isMem ? 'btn-success' : 'btn-outline'} btn-sm" onclick="toggleMemorize(${globalIdx})">${isMem ? '✅' : '⬜'}</button>
+        </div>
+        <div style="font-weight: 700; font-size: 15px; margin-bottom: 8px; color: var(--primary-dark);">${Utils.escapeHtml(item.event)}</div>
+        <div style="font-size: 13px; color: #555; margin-bottom: 6px;"><strong>考点：</strong>${Utils.escapeHtml(item.keypoint)}</div>
+        <div style="font-size: 12px; color: #888;"><strong>备注：</strong>${Utils.escapeHtml(item.significance)}</div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+  updateStats();
+}
+
+function toggleMemorize(idx) {
+  const memorized = Store.get('keypoints_memorized', {});
+  memorized[idx] = !memorized[idx];
+  Store.set('keypoints_memorized', memorized);
+  renderKeypoints();
+  Utils.showToast(memorized[idx] ? '✅ 已标记为记住' : '已取消标记', memorized[idx] ? 'success' : 'info');
+}
+
+// 闪卡模式
+function nextFlashcard() {
+  const keypoints = getKeypoints();
+  let filtered = keypoints;
+  if (currentCategory !== 'all') {
+    filtered = keypoints.filter(k => k.time === currentCategory);
+  }
+  if (filtered.length === 0) {
+    Utils.showToast('当前分类没有考点', 'warning');
+    return;
+  }
+  currentFlashcard = filtered[Math.floor(Math.random() * filtered.length)];
+  isFlipped = false;
+
+  document.getElementById('flashcard-area').style.display = 'block';
+  document.getElementById('flashcard-category').textContent = currentFlashcard.time;
+  document.getElementById('flashcard-front').textContent = currentFlashcard.event;
+  document.getElementById('flashcard-front').style.display = 'block';
+  document.getElementById('flashcard-back').style.display = 'none';
+  document.getElementById('flip-btn').textContent = '翻转查看';
+
+  const globalIdx = keypoints.indexOf(currentFlashcard);
+  const memorized = Store.get('keypoints_memorized', {});
+  document.getElementById('memorize-btn').textContent = memorized[globalIdx] ? '✅ 已记住' : '✅ 记住了';
+}
+
+function flipFlashcard() {
+  if (!currentFlashcard) return;
+  isFlipped = !isFlipped;
+  if (isFlipped) {
+    document.getElementById('flashcard-front').style.display = 'none';
+    document.getElementById('flashcard-back').style.display = 'block';
+    document.getElementById('flashcard-back-content').innerHTML = `
+      <p><strong>核心考点：</strong>${Utils.escapeHtml(currentFlashcard.keypoint)}</p>
+      <p><strong>备注：</strong>${Utils.escapeHtml(currentFlashcard.significance)}</p>
+    `;
+    document.getElementById('flip-btn').textContent = '返回题目';
+  } else {
+    document.getElementById('flashcard-front').style.display = 'block';
+    document.getElementById('flashcard-back').style.display = 'none';
+    document.getElementById('flip-btn').textContent = '翻转查看';
+  }
+}
+
+function markMemorized() {
+  if (!currentFlashcard) {
+    Utils.showToast('请先抽取一张闪卡', 'warning');
+    return;
+  }
+  const keypoints = getKeypoints();
+  const globalIdx = keypoints.indexOf(currentFlashcard);
+  toggleMemorize(globalIdx);
+  nextFlashcard();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  renderKeypoints();
+});
+</script>
+</body>
+</html>

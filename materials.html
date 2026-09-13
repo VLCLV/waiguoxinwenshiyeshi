@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="新闻史复习">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1F3864">
+  <meta name="format-detection" content="telephone=no">
+  <title>背诵资料 - 外国新闻事业史复习助手</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="materials">
+<div id="navbar-placeholder"></div>
+
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">📖 背诵资料</h1>
+    <p class="page-subtitle">12个主题 · 537条知识点 · 按国家/时间轴整理</p>
+  </div>
+
+  <!-- 统计 -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-number">12</div>
+      <div class="stat-label">主题分类</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="stat-number">537</div>
+      <div class="stat-label">知识点总数</div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-number" id="mastered-count">0</div>
+      <div class="stat-label">已掌握</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-number" id="master-rate">0%</div>
+      <div class="stat-label">掌握率</div>
+    </div>
+  </div>
+
+  <!-- 搜索和筛选 -->
+  <div class="card">
+    <div class="card-title">🔍 搜索与筛选</div>
+    <div class="flex gap-16 flex-wrap">
+      <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 250px;">
+        <input type="text" class="form-input" id="search-input" placeholder="搜索关键词（时间/事件/人物/报刊...）" oninput="renderMaterials()">
+      </div>
+      <div class="form-group" style="margin-bottom: 0; min-width: 180px;">
+        <select class="form-select" id="category-filter" onchange="renderMaterials()">
+          <option value="all">全部主题</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 0; min-width: 150px;">
+        <select class="form-select" id="master-filter" onchange="renderMaterials()">
+          <option value="all">全部状态</option>
+          <option value="mastered">已掌握</option>
+          <option value="unmastered">未掌握</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主题标签页 -->
+  <div class="card">
+    <div class="tabs" id="category-tabs"></div>
+    <div id="materials-content"></div>
+  </div>
+
+  <!-- 学习模式 -->
+  <div class="card" style="border-left: 4px solid var(--accent);">
+    <div class="flex-between">
+      <div>
+        <strong>🎯 随机背诵模式</strong>
+        <p style="color: var(--text-light); font-size: 13px; margin: 4px 0 0;">从当前筛选结果中随机抽取一条知识点进行背诵测试</p>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-accent" style="background: var(--accent); color: white;" onclick="randomTest()">🎲 随机抽题</button>
+        <button class="btn btn-outline" onclick="toggleShowAnswer()" id="answer-btn">显示答案</button>
+      </div>
+    </div>
+    <div id="random-test-area" class="mt-16" style="display: none;">
+      <div style="padding: 16px; background: #FFF8E1; border-radius: 8px; margin-bottom: 12px;">
+        <div class="badge badge-warning mb-8" id="random-category"></div>
+        <div style="font-size: 16px; font-weight: 600;" id="random-question"></div>
+      </div>
+      <div id="random-answer" style="display: none; padding: 16px; background: #E8F5E9; border-radius: 8px; border-left: 4px solid var(--success);">
+        <div class="answer-label">✅ 参考答案</div>
+        <div id="random-answer-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="footer-placeholder"></div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+let currentCategory = 'all';
+let randomCurrentItem = null;
+
+function initCategories() {
+  const categories = APP_DATA.materialCategories;
+  const select = document.getElementById('category-filter');
+  const tabs = document.getElementById('category-tabs');
+
+  // "全部"标签
+  const allTab = document.createElement('button');
+  allTab.className = 'tab active';
+  allTab.textContent = '📚 全部 (' + APP_DATA.stats.totalMaterials + ')';
+  allTab.onclick = () => switchCategory('all');
+  tabs.appendChild(allTab);
+
+  categories.forEach(cat => {
+    const count = APP_DATA.materials[cat].length;
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat + ' (' + count + ')';
+    select.appendChild(opt);
+
+    const tab = document.createElement('button');
+    tab.className = 'tab';
+    tab.textContent = cat + ' (' + count + ')';
+    tab.onclick = () => switchCategory(cat);
+    tabs.appendChild(tab);
+  });
+}
+
+function switchCategory(cat) {
+  currentCategory = cat;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const tabs = document.querySelectorAll('.tab');
+  const idx = cat === 'all' ? 0 : APP_DATA.materialCategories.indexOf(cat) + 1;
+  if (tabs[idx]) tabs[idx].classList.add('active');
+  document.getElementById('category-filter').value = cat;
+  renderMaterials();
+}
+
+function getFilteredItems() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const masterFilter = document.getElementById('master-filter').value;
+  let items = [];
+
+  const categories = currentCategory === 'all' ? APP_DATA.materialCategories : [currentCategory];
+
+  categories.forEach(cat => {
+    APP_DATA.materials[cat].forEach((item, idx) => {
+      const isMastered = Store.isMaterialMastered(cat, idx);
+
+      // 掌握状态筛选
+      if (masterFilter === 'mastered' && !isMastered) return;
+      if (masterFilter === 'unmastered' && isMastered) return;
+
+      // 搜索筛选
+      if (search) {
+        const text = (item.time + item.event + item.keypoint + item.significance).toLowerCase();
+        if (!text.includes(search)) return;
+      }
+
+      items.push({ ...item, category: cat, index: idx, isMastered });
+    });
+  });
+
+  return items;
+}
+
+function renderMaterials() {
+  const items = getFilteredItems();
+  const container = document.getElementById('materials-content');
+
+  // 更新统计
+  const mastered = Store.getMasteredMaterials();
+  const masteredCount = Object.values(mastered).filter(v => v).length;
+  document.getElementById('mastered-count').textContent = masteredCount;
+  document.getElementById('master-rate').textContent = Math.round(masteredCount / 537 * 100) + '%';
+
+  if (items.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+        <div class="title">没有找到匹配的知识点</div>
+        <p>试试调整搜索关键词或筛选条件</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = `<div style="margin-bottom: 12px; color: var(--text-light); font-size: 13px;">共找到 <strong>${items.length}</strong> 条知识点</div>`;
+  html += '<div class="table-wrapper"><table class="data-table"><thead><tr><th style="width: 50px;">序号</th><th style="width: 100px;">时间</th><th style="width: 200px;">事件/报刊/人物</th><th>核心考点</th><th style="width: 180px;">历史定位/意义</th><th style="width: 80px;">主题</th><th style="width: 70px;">掌握</th></tr></thead><tbody>';
+
+  items.forEach((item, i) => {
+    html += `
+      <tr class="${item.isMastered ? 'completed' : ''}">
+        <td>${i + 1}</td>
+        <td><strong>${Utils.escapeHtml(item.time)}</strong></td>
+        <td>${Utils.escapeHtml(item.event)}</td>
+        <td style="background: #FFFBEB;">${Utils.escapeHtml(item.keypoint)}</td>
+        <td style="font-size: 13px;">${Utils.escapeHtml(item.significance)}</td>
+        <td><span class="badge badge-info">${item.category}</span></td>
+        <td class="text-center">
+          <button class="btn ${item.isMastered ? 'btn-success' : 'btn-outline'} btn-sm" onclick="toggleMaster('${item.category}', ${item.index})" title="${item.isMastered ? '点击取消掌握' : '点击标记已掌握'}">
+            ${item.isMastered ? '✅' : '⬜'}
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+}
+
+function toggleMaster(category, index) {
+  const isMastered = Store.toggleMaterialMastered(category, index);
+  renderMaterials();
+  Utils.showToast(isMastered ? '✅ 已标记为掌握' : '已取消掌握标记', isMastered ? 'success' : 'info');
+}
+
+function randomTest() {
+  const items = getFilteredItems();
+  if (items.length === 0) {
+    Utils.showToast('当前筛选结果为空', 'warning');
+    return;
+  }
+  randomCurrentItem = items[Math.floor(Math.random() * items.length)];
+  document.getElementById('random-test-area').style.display = 'block';
+  document.getElementById('random-category').textContent = randomCurrentItem.category;
+  document.getElementById('random-question').innerHTML = `
+    <strong>时间：</strong>${Utils.escapeHtml(randomCurrentItem.time)}<br>
+    <strong>事件：</strong>${Utils.escapeHtml(randomCurrentItem.event)}
+  `;
+  document.getElementById('random-answer').style.display = 'none';
+  document.getElementById('answer-btn').textContent = '显示答案';
+}
+
+function toggleShowAnswer() {
+  const answerDiv = document.getElementById('random-answer');
+  const btn = document.getElementById('answer-btn');
+  if (answerDiv.style.display === 'none') {
+    if (!randomCurrentItem) {
+      Utils.showToast('请先点击随机抽题', 'warning');
+      return;
+    }
+    document.getElementById('random-answer-content').innerHTML = `
+      <p><strong>核心考点：</strong>${Utils.escapeHtml(randomCurrentItem.keypoint)}</p>
+      <p><strong>历史定位：</strong>${Utils.escapeHtml(randomCurrentItem.significance)}</p>
+    `;
+    answerDiv.style.display = 'block';
+    btn.textContent = '隐藏答案';
+  } else {
+    answerDiv.style.display = 'none';
+    btn.textContent = '显示答案';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initCategories();
+  renderMaterials();
+
+  // 支持URL参数跳转
+  const urlParams = new URLSearchParams(window.location.search);
+  const cat = urlParams.get('category');
+  if (cat && APP_DATA.materialCategories.includes(cat)) {
+    switchCategory(cat);
+  }
+});
+</script>
+</body>
+</html>

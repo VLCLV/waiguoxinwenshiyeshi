@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="新闻史复习">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1F3864">
+  <meta name="format-detection" content="telephone=no">
+  <title>错题本 - 外国新闻事业史复习助手</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="mistakes">
+<div id="navbar-placeholder"></div>
+
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">❌ 错题本</h1>
+    <p class="page-subtitle">收录做错的题目，反复练习直到掌握</p>
+  </div>
+
+  <!-- 统计 -->
+  <div class="stats-grid">
+    <div class="stat-card danger">
+      <div class="stat-number" id="total-mistakes">0</div>
+      <div class="stat-label">错题总数</div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-number" id="reviewed-mistakes">0</div>
+      <div class="stat-label">已复习</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-number" id="pending-mistakes">0</div>
+      <div class="stat-label">待复习</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="stat-number" id="review-rate">0%</div>
+      <div class="stat-label">复习率</div>
+    </div>
+  </div>
+
+  <!-- 操作栏 -->
+  <div class="card">
+    <div class="card-title">⚙️ 筛选与操作</div>
+    <div class="flex gap-16 flex-wrap">
+      <div class="form-group" style="margin-bottom: 0; min-width: 150px;">
+        <label class="form-label">按题型筛选</label>
+        <select class="form-select" id="type-filter" onchange="renderMistakes()">
+          <option value="all">全部题型</option>
+          <option value="single">单选题</option>
+          <option value="multiple">多选题</option>
+          <option value="term">名词解释</option>
+          <option value="short">简答题</option>
+          <option value="essay">论述题</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 0; min-width: 150px;">
+        <label class="form-label">按复习状态</label>
+        <select class="form-select" id="status-filter" onchange="renderMistakes()">
+          <option value="all">全部</option>
+          <option value="pending">待复习</option>
+          <option value="reviewed">已复习</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">&nbsp;</label>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="startReview()">🎯 开始复习错题</button>
+          <button class="btn btn-success" onclick="markAllReviewed()">✅ 全部标记已复习</button>
+          <button class="btn btn-danger" onclick="clearAll()">🗑️ 清空错题本</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 复习模式 -->
+  <div id="review-mode" style="display: none;">
+    <div class="card">
+      <div class="flex-between mb-8">
+        <span id="review-progress" class="font-bold">第 1 / 1 题</span>
+        <div class="btn-group">
+          <button class="btn btn-outline btn-sm" onclick="exitReview()">退出复习</button>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="review-progress-bar" style="width: 0%"></div></div>
+    </div>
+
+    <div class="question-card">
+      <div class="question-meta">
+        <span class="badge badge-primary" id="review-type"></span>
+        <span class="badge badge-danger" id="review-id"></span>
+      </div>
+      <div class="question-text" id="review-question"></div>
+      <div id="review-options"></div>
+      <div id="review-answer" style="display: none; margin-top: 16px;">
+        <div class="answer-reveal show">
+          <div class="answer-label">✅ 正确答案</div>
+          <div id="review-answer-content"></div>
+        </div>
+      </div>
+      <div class="mt-16 flex gap-8">
+        <button class="btn btn-primary" onclick="showReviewAnswer()">查看答案</button>
+        <button class="btn btn-success" onclick="markCurrentReviewed()">✅ 已掌握，移除</button>
+        <button class="btn btn-warning" onclick="nextReviewQuestion()">下一题 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 错题列表 -->
+  <div class="card" id="mistakes-list-card">
+    <div class="card-title">📋 错题列表</div>
+    <div id="mistakes-content"></div>
+  </div>
+
+  <!-- 错题统计 -->
+  <div class="card">
+    <div class="card-title">📊 错题分布统计</div>
+    <div id="type-stats"></div>
+  </div>
+</div>
+
+<div id="footer-placeholder"></div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+let reviewList = [];
+let reviewIndex = 0;
+
+function updateStats() {
+  const mistakes = Store.getMistakes();
+  const reviewed = mistakes.filter(m => m.reviewed).length;
+  document.getElementById('total-mistakes').textContent = mistakes.length;
+  document.getElementById('reviewed-mistakes').textContent = reviewed;
+  document.getElementById('pending-mistakes').textContent = mistakes.length - reviewed;
+  document.getElementById('review-rate').textContent = mistakes.length > 0 ? Math.round(reviewed / mistakes.length * 100) + '%' : '0%';
+}
+
+function getFilteredMistakes() {
+  const typeFilter = document.getElementById('type-filter').value;
+  const statusFilter = document.getElementById('status-filter').value;
+  let mistakes = Store.getMistakes();
+
+  if (typeFilter !== 'all') {
+    mistakes = mistakes.filter(m => m.type === typeFilter);
+  }
+  if (statusFilter === 'pending') {
+    mistakes = mistakes.filter(m => !m.reviewed);
+  } else if (statusFilter === 'reviewed') {
+    mistakes = mistakes.filter(m => m.reviewed);
+  }
+
+  return mistakes;
+}
+
+function renderMistakes() {
+  const mistakes = getFilteredMistakes();
+  const container = document.getElementById('mistakes-content');
+
+  if (mistakes.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🎉</div>
+        <div class="title">没有错题</div>
+        <p>太棒了！继续保持，去题库练习更多题目吧</p>
+        <a href="quiz.html" class="btn btn-primary mt-16">去题库练习 →</a>
+      </div>
+    `;
+    renderTypeStats();
+    updateStats();
+    return;
+  }
+
+  let html = '<div class="table-wrapper"><table class="data-table"><thead><tr><th style="width:50px;">序号</th><th style="width:80px;">题型</th><th>题目</th><th style="width:150px;">正确答案</th><th style="width:80px;">状态</th><th style="width:120px;">操作</th></tr></thead><tbody>';
+
+  mistakes.forEach((m, i) => {
+    html += `
+      <tr class="${m.reviewed ? 'completed' : ''}">
+        <td>${i + 1}</td>
+        <td><span class="badge badge-${m.type === 'single' ? 'primary' : m.type === 'multiple' ? 'info' : 'warning'}">${QUESTION_TYPE_MAP[m.type]}</span></td>
+        <td style="font-size: 13px;">${Utils.escapeHtml(m.question)}</td>
+        <td style="font-size: 13px; color: var(--success); font-weight: 600;">${Utils.escapeHtml(m.answer)}</td>
+        <td>${m.reviewed ? '<span class="badge badge-success">✅ 已复习</span>' : '<span class="badge badge-warning">⏳ 待复习</span>'}</td>
+        <td>
+          <div class="btn-group">
+            <button class="btn btn-outline btn-sm" onclick="toggleReviewed('${m.type}', ${m.id})">${m.reviewed ? '取消' : '已复习'}</button>
+            <button class="btn btn-danger btn-sm" onclick="removeMistake('${m.type}', ${m.id})">删除</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+  renderTypeStats();
+  updateStats();
+}
+
+function renderTypeStats() {
+  const mistakes = Store.getMistakes();
+  const types = ['single', 'multiple', 'term', 'short', 'essay'];
+  const container = document.getElementById('type-stats');
+
+  let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">';
+  types.forEach(type => {
+    const count = mistakes.filter(m => m.type === type).length;
+    const reviewed = mistakes.filter(m => m.type === type && m.reviewed).length;
+    const maxCount = Math.max(...types.map(t => mistakes.filter(m => m.type === t).length), 1);
+    html += `
+      <div style="background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+        <div class="font-bold mb-8">${QUESTION_TYPE_MAP[type]}</div>
+        <div style="font-size: 24px; font-weight: 800; color: var(--danger);">${count}</div>
+        <div style="font-size: 12px; color: var(--text-light); margin-bottom: 8px;">错题 · 已复习 ${reviewed}</div>
+        <div class="progress-bar" style="height: 6px;"><div class="progress-fill danger" style="width: ${count / maxCount * 100}%"></div></div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function toggleReviewed(type, id) {
+  Store.markMistakeReviewed(type, id);
+  renderMistakes();
+}
+
+function removeMistake(type, id) {
+  if (Utils.confirm('确定要删除这道错题吗？')) {
+    Store.removeMistake(type, id);
+    renderMistakes();
+    Utils.showToast('已删除', 'success');
+  }
+}
+
+function markAllReviewed() {
+  const mistakes = Store.getMistakes();
+  mistakes.forEach(m => m.reviewed = true);
+  Store.set('mistakes', mistakes);
+  renderMistakes();
+  Utils.showToast('已全部标记为已复习', 'success');
+}
+
+function clearAll() {
+  if (Utils.confirm('确定要清空所有错题吗？此操作不可恢复！')) {
+    Store.clearMistakes();
+    renderMistakes();
+    Utils.showToast('错题本已清空', 'success');
+  }
+}
+
+// 复习模式
+function startReview() {
+  reviewList = getFilteredMistakes().filter(m => !m.reviewed);
+  if (reviewList.length === 0) {
+    reviewList = getFilteredMistakes();
+  }
+  if (reviewList.length === 0) {
+    Utils.showToast('没有可复习的错题', 'warning');
+    return;
+  }
+  reviewIndex = 0;
+  document.getElementById('review-mode').style.display = 'block';
+  document.getElementById('mistakes-list-card').style.display = 'none';
+  showReviewQuestion();
+}
+
+function showReviewQuestion() {
+  if (reviewIndex >= reviewList.length) {
+    Utils.showToast('🎉 复习完成！', 'success');
+    exitReview();
+    return;
+  }
+
+  const m = reviewList[reviewIndex];
+  document.getElementById('review-type').textContent = QUESTION_TYPE_MAP[m.type];
+  document.getElementById('review-id').textContent = '第' + m.id + '题';
+  document.getElementById('review-question').textContent = m.question;
+  document.getElementById('review-progress').textContent = `第 ${reviewIndex + 1} / ${reviewList.length} 题`;
+  document.getElementById('review-progress-bar').style.width = ((reviewIndex + 1) / reviewList.length * 100) + '%';
+  document.getElementById('review-answer').style.display = 'none';
+
+  // 选项
+  const optionsArea = document.getElementById('review-options');
+  if ((m.type === 'single' || m.type === 'multiple') && m.options && m.options.length > 0) {
+    let html = '<div class="options-list">';
+    const labels = ['A', 'B', 'C', 'D'];
+    m.options.forEach((opt, i) => {
+      html += `<div class="option-item"><span class="option-label">${labels[i]}.</span><span>${Utils.escapeHtml(opt)}</span></div>`;
+    });
+    html += '</div>';
+    optionsArea.innerHTML = html;
+    optionsArea.style.display = 'block';
+  } else {
+    optionsArea.style.display = 'none';
+  }
+}
+
+function showReviewAnswer() {
+  const m = reviewList[reviewIndex];
+  document.getElementById('review-answer-content').innerHTML = `
+    <p style="font-size: 16px; font-weight: 700; color: var(--success);">${Utils.escapeHtml(m.answer)}</p>
+  `;
+  document.getElementById('review-answer').style.display = 'block';
+}
+
+function markCurrentReviewed() {
+  const m = reviewList[reviewIndex];
+  Store.markMistakeReviewed(m.type, m.id);
+  Store.removeMistake(m.type, m.id);
+  Utils.showToast('✅ 已掌握，从错题本移除', 'success');
+  reviewList.splice(reviewIndex, 1);
+  if (reviewIndex >= reviewList.length) {
+    reviewIndex = 0;
+  }
+  if (reviewList.length === 0) {
+    Utils.showToast('🎉 所有错题都已掌握！', 'success');
+    exitReview();
+    return;
+  }
+  showReviewQuestion();
+}
+
+function nextReviewQuestion() {
+  reviewIndex++;
+  showReviewQuestion();
+}
+
+function exitReview() {
+  document.getElementById('review-mode').style.display = 'none';
+  document.getElementById('mistakes-list-card').style.display = 'block';
+  renderMistakes();
+}
+
+document.addEventListener('DOMContentLoaded', renderMistakes);
+</script>
+</body>
+</html>
